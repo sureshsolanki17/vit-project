@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+.list-item {
+    padding: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.highlight {
+    background-color: #c3e2ff;
+    /* Light blue */
+}
+
+.card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    /* subtle shadow */
+}
+
+.parent-item {
+    border: 1px solid #eee;
+    /* Light border for parent */
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+    padding-left: 20px;
+    /* Indent children */
+}
+
+.parent-item h3 {
+    margin-top: 0;
+    /* Remove default margin */
+}

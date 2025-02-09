@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { PdfSchema } from './type';
 
-// - when element pick hide from current index 
-// - swap show with full opacity 
-// - where i insert proper add not up and dwon error 
-// - update new tree whith unick key 
+// - pick from drag button 
+// - set image of drag element 
+// - only drop in drop zone 
+// - handle drop event in drop zone 
+// - after drop update tree, delete, and add elemnet on drop zone
+// -  
 
 
 type PdfComponentType = {
@@ -44,26 +46,31 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
                 <div key={item.key}>
                     <div
                         className="h-5 drop-zone transition-[height] duration-200 ease-in"
-                        drop-id={item.element_id}
+                        drop-zone-root={item.element_id}
                     >
                     </div>
-                    <div id={item.element_id} element-id={item.element_id} className=" border border-gray-300 rounded p-2">
+                    <div id={item.element_id} element-id={item.element_id} >
                         <div
-                            className="flex items-center justify-between ml-6"
+                            className="flex items-center justify-between border border-gray-300 rounded px-4 py-2"
                         >
-                            <h3 className="text-lg font-medium flex gap-4 items-center">
-                                <span
+                            <div className="flex gap-4 items-center">
+                                <input type="checkbox" name="" id="" />
+                                <div
                                     data-dragid={item.element_id}
                                     draggable="true"
                                     onClick={(event) => event.stopPropagation()}>
                                     <DragIcon />
-                                </span>
-                                {item.fieldName || item.alias}
-                            </h3>
+                                </div>
+                                <h3 className="text-lg font-medium ">
+
+                                    {item.fieldName || item.alias}
+                                </h3>
+                            </div>
+
                             <span className='bg-orange-300 cursor-pointer  p-2' onClick={() => toggleExpand(item.key)}>{isExpanded ? "-" : "+"}</span>
                         </div>
                         {isExpanded && (
-                            <div className="ml-4 mt-2">
+                            <div className="ml-8">
                                 {item.children.map(renderItem)}
                             </div>
                         )}
@@ -74,21 +81,22 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
             return (
                 <div key={item.key}>
                     <div
-                        className="h-5 drop-zone-card transition-[height] duration-200 ease-in"
-                        style={{
-                            backgroundColor: 'lightblue'
-                        }}
+                        className="h-5 drop-zone transition-[height] duration-200 ease-in"
+                        drop-zone-root={item.element_id}
                     >
-                        child drop here
                     </div>
-                    <div draggable id={item.element_id} element-id={item.element_id} className="p-2 border border-gray-200 rounded flex gap-4 items-center">
-                        <span
-                            data-dragid={item.element_id}
-                            draggable="true"
-                            onClick={(event) => event.stopPropagation()}>
-                            <DragIcon />
-                        </span>
-                        <p className="font-medium">{item.fieldName || item.alias}</p>
+                    <div draggable id={item.element_id} element-id={item.element_id} className="px-4 py-2 border border-gray-200 rounded flex gap-4 items-center">
+                        <div className="flex gap-4 items-center">
+                            <input type="checkbox" name="" id="" />
+                            <div
+                                data-dragid={item.element_id}
+                                draggable="true"
+                                onClick={(event) => event.stopPropagation()}>
+                                <DragIcon />
+                            </div>
+                            <p className="font-medium">{item.fieldName || item.alias}</p>
+                        </div>
+
                         <p className="text-sm text-gray-500">Data Type: {item.data_type}</p>
                         <p className="text-sm text-gray-500">Element Tag: {item.elementTag}</p>
                     </div>
@@ -111,7 +119,7 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
         const elementId = selectElement?.getAttribute("element-id")
         if (elementId) {
             ev.dataTransfer.setData("text/plain", elementId);
-            ev.dataTransfer.setDragImage(selectElement as Element, 32, 24);
+            ev.dataTransfer.setDragImage(selectElement as Element, 45, 24);
         }
     };
 
@@ -137,25 +145,19 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
         if (elem.classList.contains('drop-zone')) {
             elem.style.height = '20px';
 
-            const dropId = elem.getAttribute('drop-id') as string;
-            const selectId = ev.dataTransfer.getData("text/plain"); // Get the ID
+            const dropId = elem.getAttribute('drop-zone-root') as string;
+            const selectId = ev.dataTransfer.getData("text/plain");
             console.log("Dropped on:", dropId, "\n", "Dragged:", selectId);
 
             const selectElement = findElementById(data, selectId) as PdfSchema
-            const selectElementIndex = findElementIndex(data, selectId) as number
 
-            // const dropOnIdIndex = findElementIndex(data, dropId)
-            // const cloneData = [...data]
+            const deleteItemData = deleteObjectByElementId(data, selectElement.element_id)
+            const dropElementIndex = findElementIndex(deleteItemData, dropId) as number;
 
-            data.splice(selectElementIndex, 1);
-            const dropElementIndex = findElementIndex(data, dropId) as number;
-
-            const insert = insertElementAtIndex(data, "", dropElementIndex, selectElement)
+            const insert = insertElementAtIndex(deleteItemData, selectElement.parent_id, dropElementIndex, selectElement)
             if (insert) {
                 updateSchema(insert)
             }
-            // Now you have both the drop target ID and the dragged element ID.
-            // Perform your logic here to update the state, move elements, etc.
         }
     };
 
@@ -273,6 +275,26 @@ function insertElementAtIndex(schema: PdfSchema[], parentId: string | null | "",
         return element; // Return original element if no change
     });
     return newSchema;
+}
+
+function deleteObjectByElementId(pdfSchemaArray: PdfSchema[], elementId: string): PdfSchema[] {
+    const newArray: PdfSchema[] = [];
+
+    for (const item of pdfSchemaArray) {
+        if (item.element_id === elementId) {
+            continue;
+        }
+
+        const newItem = { ...item };
+
+        if (item.children && item.children.length > 0) {
+            newItem.children = deleteObjectByElementId(item.children, elementId); // Recursively call for children
+        }
+
+        newArray.push(newItem);
+    }
+
+    return newArray;
 }
 
 function DragIcon() {

@@ -25,13 +25,13 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
         setExpandedItems(newExpandedItems);
     };
 
-    const findBtn = (ele: HTMLElement): string => {
+    const findDragId = (ele: HTMLElement): string => {
         if (ele) {
-            const dragId = ele?.getAttribute("data-btn");
+            const dragId = ele?.dataset?.dragid;
             if (dragId) {
                 return dragId;
             }
-            return findBtn(ele?.parentElement as HTMLElement);
+            return findDragId(ele?.parentElement as HTMLElement);
         }
         return "";
     };
@@ -47,12 +47,15 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
                         drop-id={item.element_id}
                     >
                     </div>
-                    <div draggable id={item.key} element-id={item.element_id} className=" border border-gray-300 rounded p-2">
+                    <div id={item.element_id} element-id={item.element_id} className=" border border-gray-300 rounded p-2">
                         <div
                             className="flex items-center justify-between ml-6"
                         >
                             <h3 className="text-lg font-medium flex gap-4 items-center">
-                                <span data-btn={item.element_id}>
+                                <span
+                                    data-dragid={item.element_id}
+                                    draggable="true"
+                                    onClick={(event) => event.stopPropagation()}>
                                     <DragIcon />
                                 </span>
                                 {item.fieldName || item.alias}
@@ -78,7 +81,13 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
                     >
                         child drop here
                     </div>
-                    <div draggable id={item.key} element-id={item.element_id} className="p-2 border border-gray-200 rounded flex gap-4 items-center">
+                    <div draggable id={item.element_id} element-id={item.element_id} className="p-2 border border-gray-200 rounded flex gap-4 items-center">
+                        <span
+                            data-dragid={item.element_id}
+                            draggable="true"
+                            onClick={(event) => event.stopPropagation()}>
+                            <DragIcon />
+                        </span>
                         <p className="font-medium">{item.fieldName || item.alias}</p>
                         <p className="text-sm text-gray-500">Data Type: {item.data_type}</p>
                         <p className="text-sm text-gray-500">Element Tag: {item.elementTag}</p>
@@ -89,18 +98,20 @@ const PdfComponent: React.FC<PdfComponentType> = ({ data, updateSchema }) => {
         }
     };
 
-
     const handleDragStart = (ev: React.DragEvent<HTMLDivElement>) => {
         ev.stopPropagation()
-        const elem: HTMLElement = ev.target as HTMLElement;
-        console.log("elem", elem)
-        const elementId = elem.getAttribute('element-id');
+        // const elem: HTMLElement = ev.target as HTMLElement;
+        const dragId = findDragId(ev.target as HTMLElement);
 
-        console.log("elementId", elementId)
+        if (!dragId) {
+            return;
+        }
 
+        const selectElement = document.getElementById(dragId)
+        const elementId = selectElement?.getAttribute("element-id")
         if (elementId) {
             ev.dataTransfer.setData("text/plain", elementId);
-            // deleteElementById(elementId, data)
+            ev.dataTransfer.setDragImage(selectElement as Element, 32, 24);
         }
     };
 
